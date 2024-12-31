@@ -25,3 +25,7 @@ You **must** modify the settings in `config.properties` to run cases in Defects4
 - `name`: The name of the project in Defects4J dataset, for example `Chart`
 
 - `id`: The id of the bug in the project, for example `1`
+
+## How to use it
+
+Run the `main` method in `src/main/java/ChatDBG/Main.java` to start the project.

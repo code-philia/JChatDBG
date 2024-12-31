@@ -14,12 +14,9 @@ public class Agent {
     }
 
     public void run(){
-        // Refer to the implementation in Demos/debugtest.java
-        // 1. Connect to JDB and get the process here
-        // 2. Enter the runloop
         debugger.run();
         try{
-            Thread.sleep(3500); // Wait for JDB to start
+            Thread.sleep(4000); // Wait for JDB to start
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -28,6 +25,7 @@ public class Agent {
     }
 
     private void runloop() {
+        printInstructions();
         jdbConnection = connectToJDB();
         Scanner scanner = new Scanner(System.in);
         while(true){
@@ -44,6 +42,18 @@ public class Agent {
             }
         }
         scanner.close();
+    }
+
+    private void printInstructions(){
+        String border = "----------------------------------------";
+        System.out.println(border);
+        System.out.println("Welcome to JChatDBG!");
+        System.out.println("You're now debugging "+constants.testEntryClass+"::"+constants.testEntryMethod+" in "+constants.repo+"\\"+constants.name+"\\"+constants.id);
+        System.out.println("You can send debugging commands just as you do in JDB.");
+        System.out.println("You can also ask any question about the debugging process.");
+        // TODO: Add more instructions
+        System.out.println("Type 'exit' to close the connection.");
+        System.out.println(border);
     }
 
     private Process connectToJDB(){

@@ -2,6 +2,9 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+${OUTFILE}
+all_tests
+failing-tests.txt
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

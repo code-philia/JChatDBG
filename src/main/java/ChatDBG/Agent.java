@@ -1,6 +1,10 @@
 package ChatDBG;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -11,6 +15,7 @@ public class Agent {
     public Agent(){
         constants = Constants.getInstance();
         debugger = Debugger.getInstance();
+        chatbot = ChatBot.getInstance();
     }
 
     public void run(){
@@ -34,7 +39,6 @@ public class Agent {
                     break;
                 }
                 Thread.sleep(constants.interval);
-                printResponse();
             }
             catch (Exception e){
                 e.printStackTrace();
@@ -51,7 +55,6 @@ public class Agent {
         System.out.println("You're now debugging "+constants.testEntryClass+"::"+constants.testEntryMethod+" in "+constants.repo+"\\"+constants.name+"\\"+constants.id);
         System.out.println("You can send debugging commands just as you do in JDB.");
         System.out.println("You can also ask any question about the debugging process.");
-        // TODO: Add more instructions
         System.out.println("Type 'exit' to close the connection.");
         System.out.println(border);
     }
@@ -75,28 +78,47 @@ public class Agent {
             jdbConnection.destroy();
             return 0;
         }
+        boolean isJDBCommand = false;
+        String command = inputCommand.split(" ")[0];
+        if(constants.commands.contains(command)){
+            isJDBCommand = true;
+        }
         inputCommand += "\n";
-        jdbConnection.getOutputStream().write(inputCommand.getBytes());
-        jdbConnection.getOutputStream().flush();
+        if(isJDBCommand){
+            printResponse(getResponse(inputCommand));
+        }
+        else{
+            printResponse(chatbot.getResponse(inputCommand));
+        }
         return 1;
     }
 
-    private void printResponse() throws Exception {
-        String border = "----------------------------------------";
+    private String getResponse(String inputCommand) throws Exception {
+        jdbConnection.getOutputStream().write(inputCommand.getBytes());
+        jdbConnection.getOutputStream().flush();
+
         InputStream inputStream = jdbConnection.getInputStream();
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[constants.bufferSize];
-        int bytesRead = 0;
+        int length;
+        String response = "";
         while(inputStream.available() > 0){
-            bytesRead = inputStream.read(buffer);
-            if(bytesRead > 0){
-                // Use GBK here to decode Chinese characters
-                System.out.println(new String(buffer, 0, bytesRead, "GBK"));
-            }
+            length = inputStream.read(buffer);
+            result.write(buffer, 0, length);
         }
+        response = result.toString("GBK");
+
+        return response;
+    }
+
+    private void printResponse(String response) throws Exception {
+        String border = "----------------------------------------";
+        System.out.println(response);
         System.out.println(border);
     }
 
     private Constants constants;
     private Debugger debugger;
+    private ChatBot chatbot;
     Process jdbConnection;
 }

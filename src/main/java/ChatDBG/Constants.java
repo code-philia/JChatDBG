@@ -2,6 +2,8 @@ package ChatDBG;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Properties;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -49,6 +51,7 @@ public class Constants {
             bufferSize = Integer.parseInt(properties.getProperty("bufferSize"));
             basedir = getBasedir();
             getTestEntryClassAndMethod();
+            commands = getCommands();
         }
         catch(IOException e){
             e.printStackTrace();
@@ -132,6 +135,25 @@ public class Constants {
         }
     }
 
+    private ArrayList<String> getCommands(){
+        ArrayList<String> commands = new ArrayList<>();
+        String configFilePath = "config.properties";
+        Properties properties = new Properties();
+        try(FileInputStream fis = new FileInputStream(configFilePath)){
+            properties.load(fis);
+            String commandsWithComma = properties.getProperty("commands");
+            String[] parts = commandsWithComma.split(",");
+            for(String part: parts){
+                commands.add(part);
+            }
+            return commands;
+        }
+        catch(IOException e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public String basedir = null;
     public String testEntryClass = null;
     public String testEntryMethod = null;
@@ -142,4 +164,5 @@ public class Constants {
     public int port = 5005;
     public int interval = 500;
     public int bufferSize = 100000;
+    public ArrayList<String> commands = new ArrayList<>();
 }

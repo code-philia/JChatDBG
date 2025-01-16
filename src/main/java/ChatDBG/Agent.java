@@ -1,9 +1,6 @@
 package ChatDBG;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -12,6 +9,15 @@ import java.util.Scanner;
  */
 public class Agent {
 
+    private static Agent instance;
+
+    public static Agent getInstance() {
+        if (instance == null) {
+            instance = new Agent();
+        }
+        return instance;
+    }
+
     public Agent(){
         constants = Constants.getInstance();
         debugger = Debugger.getInstance();
@@ -19,7 +25,7 @@ public class Agent {
     }
 
     public void run(){
-        debugger.run();
+        jdbServer = debugger.run();
         try{
             Thread.sleep(4000); // Wait for JDB to start
         }
@@ -35,10 +41,9 @@ public class Agent {
         Scanner scanner = new Scanner(System.in);
         while(true){
             try{
-                if(sendCommand(scanner)==0){
+                if(sendCommand(scanner)==0) {
                     break;
                 }
-                Thread.sleep(constants.interval);
             }
             catch (Exception e){
                 e.printStackTrace();
@@ -61,9 +66,13 @@ public class Agent {
 
     private Process connectToJDB(){
         int port = constants.port;
-        String command = "jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=" + port;
+        String[] command = {"cmd.exe", "/c", "jdb", "-connect", "com.sun.jdi.SocketAttach:hostname=localhost,port="+port};
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectErrorStream(true);
         try {
-            return Runtime.getRuntime().exec(command);
+            Process p = pb.start();
+            readResponse(p.getInputStream()); // Don't need to print the response here, just read and discard it
+            return p;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -76,6 +85,7 @@ public class Agent {
         if(inputCommand.equals("exit")){
             System.out.println("Connection closed.");
             jdbConnection.destroy();
+            jdbServer.destroy();
             return 0;
         }
         boolean isJDBCommand = false;
@@ -83,21 +93,35 @@ public class Agent {
         if(constants.commands.contains(command)){
             isJDBCommand = true;
         }
-        inputCommand += "\n";
         if(isJDBCommand){
             printResponse(getResponse(inputCommand));
         }
         else{
             printResponse(chatbot.getResponse(inputCommand));
+            clearHistory();
         }
         return 1;
     }
 
-    private String getResponse(String inputCommand) throws Exception {
+    /**
+     * Send the input command to JDB and get the response.
+     * @param inputCommand the command to send
+     * @return response from JDB
+     * @throws Exception if an error occurs while sending the command
+     */
+    public String getResponse(String inputCommand) throws Exception {
+        if(!inputCommand.endsWith("\n")){
+            inputCommand += "\n";
+        }
         jdbConnection.getOutputStream().write(inputCommand.getBytes());
         jdbConnection.getOutputStream().flush();
+        String response = readResponse(jdbConnection.getInputStream());
+        updateHistory(inputCommand, response);
+        return response;
+    }
 
-        InputStream inputStream = jdbConnection.getInputStream();
+    private String readResponse(InputStream inputStream) throws Exception {
+        Thread.sleep(constants.interval);   // Wait for the response to be ready
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[constants.bufferSize];
         int length;
@@ -107,7 +131,6 @@ public class Agent {
             result.write(buffer, 0, length);
         }
         response = result.toString("GBK");
-
         return response;
     }
 
@@ -117,8 +140,22 @@ public class Agent {
         System.out.println(border);
     }
 
+    public String getHistory(){
+        return history;
+    }
+
+    private void updateHistory(String command, String response){
+        history += command + "\n" + response + "\n";
+    }
+
+    private void clearHistory(){
+        history = "";
+    }
+
     private Constants constants;
     private Debugger debugger;
     private ChatBot chatbot;
+    private String history;
     Process jdbConnection;
+    Process jdbServer;
 }

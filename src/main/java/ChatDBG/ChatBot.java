@@ -19,37 +19,30 @@ public class ChatBot {
     private ChatBot() {}
 
     public String getResponse(String question) {
-        // TODO: Add function calling ability of the LLM
-        //  How to implement:
-        //  1. the answer by gpt has "tool_calls" field, which is a list of function calls
-        //  2. refer to the implementation in ChatDBG to see how to give the result of function calling back to LLM
-        // TODO: Use prompt to replace question when everything ready
-        // debug
         String prompt = Prompt.getInstance().getPrompt(question);
-        System.out.println(prompt);
-        // debug
         String[] command = {"cmd.exe", "/c", "python", "src/main/python/chat.py"};
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
         try {
             pb.start();
-            return askServer(question);
+            return askServer(prompt);
         } catch (Exception e) {
             e.printStackTrace();
-            return "Error: " + e.getMessage();
+            return "Error in ChatDBG.ChatBot.getResponse: " + e.getMessage();
         }
     }
 
     private String askServer(String question) {
         clientSocket = null;
         initialAsk(question);
-        String response = readMessage();
+        String response = keepReading();
         closeSocket();
         return response;
     }
 
     private void initialAsk(String question){
-        for(int attempt = 1; attempt <= 5; attempt++){
+        System.out.println("Connecting to server...");
+        for(int attempt = 1; attempt <= 10; attempt++){
             try{
                 clientSocket = new Socket("localhost", 6789);
                 sendMessage(question);
@@ -59,31 +52,71 @@ public class ChatBot {
                 sleepAWhile();
             }
             catch (Exception e){
-                System.out.println("Error when attempting to send command: " + e);
+                System.out.println("Error in ChatDBG.ChatBot.initialAsk: " + e);
+            }
+        }
+        System.out.println("Failed to connect to LLM server.");
+    }
+
+    private String keepReading(){
+        while(true){
+            String response = readMessage();
+            String[] parts = response.split(" ");
+            if(parts[0].equals("info")){
+                handleInfo(parts[1], parts[2]);
+            }
+            else if(parts[0].equals("debug")){
+                handleDebug(parts[1]);
+            }
+            else{
+                return response;
             }
         }
     }
 
-    private void sendMessage(String question) throws Exception {
-        OutputStream out = clientSocket.getOutputStream();
-        PrintWriter writer = new PrintWriter(out, true);
-        writer.println(question);
+    private void handleInfo(String className, String methodName){
+        String info = Functions.getInstance().info(className, methodName);
+        sendMessage(info);
+    }
+
+    private void handleDebug(String command){
+        String response = Functions.getInstance().debug(command);
+        sendMessage(response);
+    }
+
+    private void sendMessage(String question){
+        System.out.println("Sending message to server...");
+        try{
+            OutputStream out = clientSocket.getOutputStream();
+            PrintWriter writer = new PrintWriter(out, true);
+            writer.println(question);
+        }
+        catch (Exception e) {
+            System.out.println("Error in ChatDBG.ChatBot.sendMessage: " + e);
+        }
     }
 
     private String readMessage(){
+        System.out.println("Waiting for response...");
         try{
             InputStream in = clientSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             StringBuilder response = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
+                if(line.equals("END")){
+                    break;
+                }
                 response.append(line);
                 response.append("\n");
+            }
+            if(response.length() > 0 && response.charAt(response.length()-1) == '\n'){
+                response.deleteCharAt(response.length()-1);
             }
             return response.toString();
         }
         catch (Exception e){
-            return "Error: " + e.getMessage();
+            return "Error in ChatDBG.ChatBot.readMessage: " + e.getMessage();
         }
     }
 
@@ -93,6 +126,7 @@ public class ChatBot {
             Thread.sleep(retryInterval);
         } catch (InterruptedException e) {
             e.printStackTrace();
+            System.out.println("Error in ChatDBG.ChatBot.sleepAWhile: " + e);
         }
     }
 
@@ -101,7 +135,7 @@ public class ChatBot {
             try {
                 clientSocket.close();
             } catch (Exception e) {
-                System.out.println("Error when closing socket: " + e);
+                System.out.println("Error in ChatDBG.ChatBot.closeSocket: " + e);
             }
         }
     }

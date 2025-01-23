@@ -31,6 +31,7 @@ public class Agent {
         }
         catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Error in ChatDBG.Agent.run: " + e.getMessage());
         }
         runloop();
     }
@@ -47,6 +48,7 @@ public class Agent {
             }
             catch (Exception e){
                 e.printStackTrace();
+                System.out.println("Error in ChatDBG.Agent.runloop: " + e.getMessage());
                 break;
             }
         }
@@ -75,6 +77,7 @@ public class Agent {
             return p;
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Error in ChatDBG.Agent.connectToJDB: " + e.getMessage());
             return null;
         }
     }
@@ -88,12 +91,7 @@ public class Agent {
             jdbServer.destroy();
             return 0;
         }
-        boolean isJDBCommand = false;
-        String command = inputCommand.split(" ")[0];
-        if(constants.commands.contains(command)){
-            isJDBCommand = true;
-        }
-        if(isJDBCommand){
+        if(isJDBCommand(inputCommand)){
             printResponse(getResponse(inputCommand));
         }
         else{
@@ -101,6 +99,14 @@ public class Agent {
             clearHistory();
         }
         return 1;
+    }
+
+    private boolean isJDBCommand(String inputCommand){
+        String command = inputCommand.split(" ")[0];
+        if(constants.commands.contains(command)){
+            return true;
+        }
+        return false;
     }
 
     /**

@@ -2,10 +2,6 @@ package ChatDBG;
 
 import java.io.File;
 
-/**
- * Starts JDB to debug the target program.
- * Handles the communication between JDB and agent.
- */
 public class Debugger {
     private static Debugger instance;
 
@@ -29,6 +25,7 @@ public class Debugger {
             return pb.start();
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Error in ChatDBG.Debugger.run: " + e.getMessage());
             return null;
         }
     }

@@ -19,7 +19,6 @@ public class Prompt {
     }
 
     public String getPrompt(String question) {
-        // TODO: Implement `debug` and `info` functions as done in ChatDBG
         userText = question;
         String prompt = "";
         try{
@@ -33,13 +32,13 @@ public class Prompt {
         }
         catch (Exception e){
             e.printStackTrace();
-            return "Error: " + e.getMessage();
+            return "Error in ChatDBG.Prompt.getPrompt: " + e.getMessage();
         }
     }
 
     private String getInstructions(){
         String instructions = "";
-        instructions += "You are a debugging assistant. You will be give a Python stack trace" +
+        instructions += "You are a debugging assistant. You will be give a Java stack trace " +
                 "for an error and answer questions related to the root cause of the error.\n" +
                 "Call the `debug` function to run JDB debugger commands on the stopped program." +
                 "You may call the `debug` function to run the following commands: ";
@@ -76,7 +75,7 @@ public class Prompt {
         }
         catch (Exception e){
             e.printStackTrace();
-            return "Error: " + e.getMessage();
+            return "Error in ChatDBG.Prompt.getStackTrace: " + e.getMessage();
         }
     }
 
@@ -95,7 +94,7 @@ public class Prompt {
         }
         catch(IOException e){
             e.printStackTrace();
-            return "Error: " + e.getMessage();
+            return "Error in ChatDBG.Prompt.getErrorMessage: " + e.getMessage();
         }
     }
 

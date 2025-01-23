@@ -55,6 +55,7 @@ public class Constants {
         }
         catch(IOException e){
             e.printStackTrace();
+            System.out.println("Error in Constants.readProperties: " + e.getMessage());
         }
     }
 
@@ -92,6 +93,7 @@ public class Constants {
         }
         catch(Exception e){
             e.printStackTrace();
+            System.out.println("Error in Constants.updateXML: " + e.getMessage());
         }
     }
 
@@ -132,6 +134,7 @@ public class Constants {
         }
         catch(IOException e){
             e.printStackTrace();
+            System.out.println("Error in Constants.getTestEntryClassAndMethod: " + e.getMessage());
         }
     }
 
@@ -150,6 +153,7 @@ public class Constants {
         }
         catch(IOException e){
             e.printStackTrace();
+            System.out.println("Error in Constants.getCommands: " + e.getMessage());
             return null;
         }
     }

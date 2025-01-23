@@ -8,40 +8,44 @@ class ChatServer:
         self.client = OpenAI()
         self.tools = self.get_tools()
         self.conversation = [{'role': 'system', 'content': 'You are a helpful assistant.'}]
+        self.responses = ""
         
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_address = ('localhost', 6789)
         self.server_socket.bind(self.server_address)
         self.server_socket.listen(1)
+        self.connection = None
         
-    def get_weather(self, location):
-        return f"The weather in {location} is sunny."
+    def send_message(self, message):
+        encoded_break = '\n'.encode('GBK')
+        encoded_message = message.encode('GBK')
+        self.connection.sendall(encoded_message + encoded_break)
+        self.connection.sendall("END\n".encode('GBK'))  # This is a signal to end the message
+        
+    def get_response(self, message):
+        self.send_message(message)
+        response = self.connection.recv(1024)
+        return response.decode('GBK')
         
     def get_tools(self):
-        # TODO: Later use a seperate file `functions.py` to store all the functions
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_weather",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "location": {"type": "string"}
-                        }
-                    }
-                }
-            }
-        ]
+        function_list = ["info", "debug"]
+        tools = []
+        for function_name in function_list:
+            function = getattr(self, function_name)
+            schema = json.loads(function.__doc__)
+            tools.append(schema)
         return tools
     
     def add_function_results_to_conversation(self, completion):
         tool_calls = completion.choices[0].message.tool_calls
         for tool_call in tool_calls:
             function_name = tool_call.function.name
+            print(f"Invoke function: {function_name}")
             function_arguments = tool_call.function.arguments
             function_arguments = json.loads(function_arguments)
+            print(f"Function arguments: {function_arguments}")
             function_return_value = getattr(self, function_name)(**function_arguments)
+            print(f"Function return value: {function_return_value}")
             response = {
                 "tool_call_id": tool_call.id,
                 "role": "tool",
@@ -50,33 +54,107 @@ class ChatServer:
             }
             self.conversation.append({"role": "assistant", "tool_calls": tool_calls})   # role为tool的消息必须是对前面assistant消息中tool_calls的响应
             self.conversation.append(response)
-
-    def get_openai_response(self, message):
+            
+    def keep_asking(self):
         while True:
-            try:
-                completion = self.client.chat.completions.create(
-                    model="gpt-4o-2024-05-13",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": message}
-                    ]
-                )
-                if getattr(completion.choices[0].message, "content", None):
-                    return completion.choices[0].message.content
-                else:
-                    time.sleep(2)
-            except:
-                pass
+            completion = self.client.chat.completions.create(
+                model="gpt-4o-2024-05-13",
+                messages=self.conversation,
+                tools=self.tools
+            )
+            print('Get completion')
+            response_message = completion.choices[0].message
+            if response_message.content:
+                print(f"GPT response: {response_message.content}")
+                self.responses += response_message.content
+                self.responses += "\n"
+            if completion.choices[0].finish_reason == "tool_calls":
+                print("Get tool calls")
+                self.add_function_results_to_conversation(completion)
+            else:
+                break
 
     def run(self):
-        connection, _ = self.server_socket.accept()
+        self.connection, _ = self.server_socket.accept()
         try:
-            data = connection.recv(1024)
-            response = self.get_openai_response(data.decode('utf-8'))
-            connection.sendall(response.encode('utf-8'))
+            question = self.connection.recv(1024)
+            print(f"Get question: {question.decode('GBK')}")
+            self.conversation.append({'role': 'user', 'content': question.decode('GBK')})
+            self.keep_asking()
+            self.send_message(self.responses)
         finally:
-            connection.close()
             print("Connection closed")
+            
+    ### Callbacks for LLM
+    
+    def get_weather(self, location):
+        """
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {"type": "string"}
+                    }
+                }
+            }
+        }
+        """
+        # debug
+        # print(self.get_response("This is a test"))
+        return f"The weather in {location} is sunny."
+    
+    def info(self, class_name, method_name):
+        """
+        {
+            "type": "function",
+            "function": {
+                "name": "info",
+                "description": "Call the `info` function to get the documentation and source code for a function. Unless it is from a common, widely-used library, you MUST call `info` exactly once on any symbol that is referenced in code leading up to the error.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "class_name": {
+                            "type": "string",
+                            "description": "The name of the class that contains the function.",
+                            "example": "org.apache.commons.math3.optimization.direct.CMAESOptimizerTest"
+                        },
+                        "method_name": {
+                            "type": "string",
+                            "description": "The name of the function to get the documentation and source code for.",
+                            "example": "testFitAccuracyDependsOnBoundary"
+                        }
+                    },
+                    "required": ["class_name", "method_name"]
+                }
+            }
+        }
+        """
+        return self.get_response(f"info {class_name} {method_name}")
+    
+    def debug(self, command):
+        """
+        {
+            "type": "function",
+            "function": {
+                "name": "debug",
+                "description": "Call the `debug` function to run JDB debugger commands on the stopped program. You may call the `debug` function to run the following commands: `where`, `up`, `down`, `print`, `list`.  Call `debug` to print any variable value or expression that you believe may contribute to the error.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "The JDB command to run."
+                        }
+                    },
+                    "required": [ "command" ]
+                }
+            }
+        }
+        """
+        return self.get_response(f"debug {command}")
 
 if __name__ == "__main__":
     chat_server = ChatServer()

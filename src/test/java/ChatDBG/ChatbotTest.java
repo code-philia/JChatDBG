@@ -5,7 +5,7 @@ public class ChatbotTest {
         // Create a ChatBot instance
         ChatBot chatBot = ChatBot.getInstance();
         // Get a response from the ChatBot
-        String response = chatBot.getResponse("Hello");
+        String response = chatBot.getResponse("What is the source code of org.apache.commons.math3.optimization.direct.CMAESOptimizerTest.testFitAccuracyDependsOnBoundary?");
         // Print the response
         System.out.println(response);
     }

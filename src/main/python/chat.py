@@ -16,6 +16,26 @@ class ChatServer:
         self.server_socket.listen(1)
         self.connection = None
         
+    def read_line(self):
+        data = b""
+        while True:
+            part = self.connection.recv(1)
+            data += part
+            if part == b"\n":
+                break
+        return data.decode('GBK')
+        
+    def read_message(self):
+        data = ""
+        while True:
+            line = self.read_line()
+            if line == "END\n":
+                break
+            data += line
+        if data.endswith("\n"):
+            data = data[:-1]
+        return data
+        
     def send_message(self, message):
         encoded_break = '\n'.encode('GBK')
         encoded_message = message.encode('GBK')
@@ -24,8 +44,9 @@ class ChatServer:
         
     def get_response(self, message):
         self.send_message(message)
-        response = self.connection.recv(1024)
-        return response.decode('GBK')
+        # response = self.connection.recv(1024)
+        response = self.read_message()
+        return response
         
     def get_tools(self):
         function_list = ["info", "debug"]
@@ -77,34 +98,16 @@ class ChatServer:
     def run(self):
         self.connection, _ = self.server_socket.accept()
         try:
-            question = self.connection.recv(1024)
-            print(f"Get question: {question.decode('GBK')}")
-            self.conversation.append({'role': 'user', 'content': question.decode('GBK')})
+            # question = self.connection.recv(1024)
+            question = self.read_message()
+            print(f"Get question: {question}")
+            self.conversation.append({'role': 'user', 'content': question})
             self.keep_asking()
             self.send_message(self.responses)
         finally:
             print("Connection closed")
             
     ### Callbacks for LLM
-    
-    def get_weather(self, location):
-        """
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {"type": "string"}
-                    }
-                }
-            }
-        }
-        """
-        # debug
-        # print(self.get_response("This is a test"))
-        return f"The weather in {location} is sunny."
     
     def info(self, class_name, method_name):
         """

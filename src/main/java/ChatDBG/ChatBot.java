@@ -24,7 +24,7 @@ public class ChatBot {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
         try {
-            pb.start();
+            // pb.start();
             return askServer(prompt);
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,21 +75,27 @@ public class ChatBot {
     }
 
     private void handleInfo(String className, String methodName){
+        // System.out.println("Received info request: "+className+" "+methodName);
         String info = Functions.getInstance().info(className, methodName);
+        // System.out.println("Info response:\n"+info);
         sendMessage(info);
     }
 
     private void handleDebug(String command){
+        // System.out.println("Received debug request: "+command);
         String response = Functions.getInstance().debug(command);
+        // System.out.println("Debug response:\n"+response);
         sendMessage(response);
     }
 
     private void sendMessage(String question){
         System.out.println("Sending message to server...");
+        question += "\nEND\n";
         try{
             OutputStream out = clientSocket.getOutputStream();
-            PrintWriter writer = new PrintWriter(out, true);
-            writer.println(question);
+            OutputStreamWriter writer = new OutputStreamWriter(out, "GBK");
+            PrintWriter printWriter = new PrintWriter(writer, true);
+            printWriter.println(question);
         }
         catch (Exception e) {
             System.out.println("Error in ChatDBG.ChatBot.sendMessage: " + e);

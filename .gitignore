@@ -5,6 +5,7 @@ target/
 ${OUTFILE}
 all_tests
 failing-tests.txt
+src/main/python/tempCodeRunnerFile.py
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

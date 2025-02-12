@@ -24,7 +24,7 @@ public class ChatBot {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
         try {
-            // pb.start();
+            pb.start();
             return askServer(prompt);
         } catch (Exception e) {
             e.printStackTrace();
@@ -66,7 +66,14 @@ public class ChatBot {
                 handleInfo(parts[1], parts[2]);
             }
             else if(parts[0].equals("debug")){
-                handleDebug(parts[1]);
+                String command = "";
+                if(parts.length > 2){
+                    command = parts[1] + " " + parts[2];
+                }
+                else{
+                    command = parts[1];
+                }
+                handleDebug(command);
             }
             else{
                 return response;
@@ -75,21 +82,21 @@ public class ChatBot {
     }
 
     private void handleInfo(String className, String methodName){
-        // System.out.println("Received info request: "+className+" "+methodName);
+        System.out.println("(ChatDBG) "+"info "+className+" "+methodName);
         String info = Functions.getInstance().info(className, methodName);
-        // System.out.println("Info response:\n"+info);
+        System.out.println(info);
         sendMessage(info);
     }
 
     private void handleDebug(String command){
-        // System.out.println("Received debug request: "+command);
+        System.out.println("(ChatDBG) "+"debug "+command);
         String response = Functions.getInstance().debug(command);
-        // System.out.println("Debug response:\n"+response);
+        System.out.println(response);
         sendMessage(response);
     }
 
     private void sendMessage(String question){
-        System.out.println("Sending message to server...");
+        // System.out.println("Sending message to server...");
         question += "\nEND\n";
         try{
             OutputStream out = clientSocket.getOutputStream();
@@ -103,7 +110,7 @@ public class ChatBot {
     }
 
     private String readMessage(){
-        System.out.println("Waiting for response...");
+        // System.out.println("Waiting for response...");
         try{
             InputStream in = clientSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));

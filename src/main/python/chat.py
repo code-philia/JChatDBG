@@ -2,6 +2,7 @@ import socket
 import time
 import json
 from openai import OpenAI
+import openai
 
 class ChatServer:
     def __init__(self):
@@ -63,8 +64,9 @@ class ChatServer:
             function_name = tool_call.function.name
             print(f"Invoke function: {function_name}")
             function_arguments = tool_call.function.arguments
-            function_arguments = json.loads(function_arguments)
             print(f"Function arguments: {function_arguments}")
+            function_arguments = json.loads(function_arguments)
+            print(f"Json function arguments: {function_arguments}")
             function_return_value = getattr(self, function_name)(**function_arguments)
             print(f"Function return value: {function_return_value}")
             response = {
@@ -78,11 +80,19 @@ class ChatServer:
             
     def keep_asking(self):
         while True:
-            completion = self.client.chat.completions.create(
-                model="gpt-4o-2024-05-13",
-                messages=self.conversation,
-                tools=self.tools
-            )
+            try:
+                completion = self.client.chat.completions.create(
+                    model="gpt-4o-2024-05-13",
+                    messages=self.conversation,
+                    tools=self.tools
+                )
+            except openai.RateLimitError:
+                print("Rate limited, waiting for 1 second")
+                time.sleep(1)  
+                continue
+            except Exception as e:
+                print(f"Error: {e}")
+                break
             print('Get completion')
             response_message = completion.choices[0].message
             if response_message.content:
@@ -149,7 +159,7 @@ class ChatServer:
                     "properties": {
                         "command": {
                             "type": "string",
-                            "description": "The JDB command to run."
+                            "description": "The JDB command to run. Don't forget you should include the name of the variable or expression in command when using print command."
                         }
                     },
                     "required": [ "command" ]

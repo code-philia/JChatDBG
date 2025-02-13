@@ -95,7 +95,7 @@ public class Agent {
             printResponse(getResponse(inputCommand));
         }
         else{
-            printResponse(chatbot.getResponse(inputCommand));
+            printResponse("(ChatDBG) "+chatbot.getResponse(inputCommand));
             clearHistory();
         }
         return 1;

@@ -59,13 +59,19 @@ class ChatServer:
         return tools
     
     def add_function_results_to_conversation(self, completion):
+        self.conversation.append(completion.choices[0].message)
         tool_calls = completion.choices[0].message.tool_calls
         for tool_call in tool_calls:
             function_name = tool_call.function.name
             print(f"Invoke function: {function_name}")
             function_arguments = tool_call.function.arguments
             print(f"Function arguments: {function_arguments}")
-            function_arguments = json.loads(function_arguments)
+            try:
+                function_arguments = json.loads(function_arguments)
+            except json.JSONDecodeError:
+                function_arguments = {
+                    "command": function_arguments
+                }
             print(f"Json function arguments: {function_arguments}")
             function_return_value = getattr(self, function_name)(**function_arguments)
             print(f"Function return value: {function_return_value}")
@@ -73,9 +79,8 @@ class ChatServer:
                 "tool_call_id": tool_call.id,
                 "role": "tool",
                 "name": function_name,
-                "content": function_return_value
+                "content": str(function_return_value)
             }
-            self.conversation.append({"role": "assistant", "tool_calls": tool_calls})   # role为tool的消息必须是对前面assistant消息中tool_calls的响应
             self.conversation.append(response)
             
     def keep_asking(self):

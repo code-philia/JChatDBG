@@ -46,7 +46,7 @@ public class Functions {
         builder.addSourceTree(new File(testPath));
         JavaClass cls = builder.getClassByName(className);
         if(cls == null){
-            return "Function not found";
+            return "Function not found, please check if the class name and method name are correct, or try to use breakpoint and step command to locate the function";
         }
         List<JavaMethod> methods = cls.getMethods();
         for(JavaMethod method: methods){

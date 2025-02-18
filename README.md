@@ -4,6 +4,12 @@ This project supports [ChatDBG](https://github.com/plasma-umass/ChatDBG)'s runni
 
 The project has not been completed yet, but it is under development.
 
+## Branches
+
+- `main`: The implementation of ChatDBG for Java language.
+
+- `FullAutomated`: Base on ChatDBG, automate the whole process with no need to manually input some JDB debugging commands and natural language questions.
+
 ## Project Setup
 
 ### Environment

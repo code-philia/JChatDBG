@@ -3,9 +3,13 @@ import time
 import json
 from openai import OpenAI
 import openai
+import os
 
 class ChatServer:
     def __init__(self):
+        self.log_path = self.get_log_path()
+        self.initialize_log()
+        
         self.client = OpenAI()
         self.tools = self.get_tools()
         self.conversation = [{'role': 'system', 'content': 'You are a helpful assistant.'}]
@@ -16,6 +20,22 @@ class ChatServer:
         self.server_socket.bind(self.server_address)
         self.server_socket.listen(1)
         self.connection = None
+        
+    def get_log_path(self):
+        current_path = os.path.abspath(__file__)
+        current_directory = os.path.dirname(current_path)
+        log_path = os.path.join(current_directory, "log.txt")
+        return log_path
+        
+    def initialize_log(self):
+        current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        with open(self.log_path, "w") as f:
+            f.write(f"Log started at {current_time}\n")
+            
+    def write_log(self, message):
+        with open(self.log_path, "a") as f:
+            f.write(message)
+            f.write("\n")
         
     def read_line(self):
         data = b""
@@ -63,18 +83,18 @@ class ChatServer:
         tool_calls = completion.choices[0].message.tool_calls
         for tool_call in tool_calls:
             function_name = tool_call.function.name
-            print(f"Invoke function: {function_name}")
+            self.write_log(f"Invoke function: {function_name}")
             function_arguments = tool_call.function.arguments
-            print(f"Function arguments: {function_arguments}")
+            self.write_log(f"Function arguments: {function_arguments}")
             try:
                 function_arguments = json.loads(function_arguments)
             except json.JSONDecodeError:
                 function_arguments = {
                     "command": function_arguments
                 }
-            print(f"Json function arguments: {function_arguments}")
+            self.write_log(f"Json function arguments: {function_arguments}")
             function_return_value = getattr(self, function_name)(**function_arguments)
-            print(f"Function return value: {function_return_value}")
+            self.write_log(f"Function return value: {function_return_value}")
             response = {
                 "tool_call_id": tool_call.id,
                 "role": "tool",
@@ -92,20 +112,20 @@ class ChatServer:
                     tools=self.tools
                 )
             except openai.RateLimitError:
-                print("Rate limited, waiting for 1 second")
+                self.write_log("Rate limited, waiting for 1 second")
                 time.sleep(1)  
                 continue
             except Exception as e:
-                print(f"Error: {e}")
+                self.write_log(f"Error: {e}")
                 break
-            print('Get completion')
+            self.write_log('Get completion')
             response_message = completion.choices[0].message
             if response_message.content:
-                print(f"GPT response: {response_message.content}")
+                self.write_log(f"GPT response: {response_message.content}")
                 self.responses += response_message.content
                 self.responses += "\n"
             if completion.choices[0].finish_reason == "tool_calls":
-                print("Get tool calls")
+                self.write_log("Get tool calls")
                 self.add_function_results_to_conversation(completion)
             else:
                 break
@@ -115,12 +135,12 @@ class ChatServer:
         try:
             # question = self.connection.recv(1024)
             question = self.read_message()
-            print(f"Get question: {question}")
+            self.write_log(f"Get question: {question}")
             self.conversation.append({'role': 'user', 'content': question})
             self.keep_asking()
             self.send_message(self.responses)
         finally:
-            print("Connection closed")
+            self.write_log("Connection closed")
             
     ### Callbacks for LLM
     

@@ -34,7 +34,7 @@ public class Functions {
         // TODO: QDox and none of the existing tools can help getting the line numbers of the code,
         //   so that we have to modify the prompt instead, ask ChatGPT to use both list and info
         //   commands to locate the line of code
-        // TODO: ChatDBG try to use info to learn about a variable name some times, try to find out why
+        // TODO: ChatDBG try to use info to learn about a variable name some times, modify the prompt to remind LLM of using print command
         if(isSystemClass(className)){
             return String.format("%s is a system class", className);
         }

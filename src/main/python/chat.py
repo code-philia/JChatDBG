@@ -164,7 +164,8 @@ class ChatServer:
                     "properties": {
                         "command": {
                             "type": "string",
-                            "description": "The JDB command to run. Don't forget you should include the name of the variable or expression in command when using print command."
+                            "description": "The JDB command to run. Don't forget you should include the name of the variable or expression in command when using print command.",
+                            "example": "print x"
                         }
                     },
                     "required": [ "command" ]

@@ -1,9 +1,7 @@
 package ChatDBG;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.text.MessageFormat;
 
 /**
  * Used to build the prompt for the LLM.
@@ -20,15 +18,14 @@ public class Prompt {
 
     public String getPrompt(String question) {
         userText = question;
-        String prompt = "";
+        String promptFormat = getFormat("Prompt/PromptFormat.txt");
         try{
-            prompt += getInstructions() + "\n";
-            prompt += getStackTrace() + "\n";
-            prompt += getErrorMessage() + "\n";
-            prompt += getErrorDetails() + "\n";
-            prompt += getDebugHistory() + "\n";
-            prompt += getUserText() + "\n";
-            return prompt;
+            String instructions = getInstructions();
+            String stackTrace = getStackTrace();
+            String errorMessage = getErrorMessage();
+            String debugHistory = getDebugHistory();
+            String userText = getUserText();
+            return MessageFormat.format(promptFormat, instructions, stackTrace, errorMessage, debugHistory, userText);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -37,41 +34,29 @@ public class Prompt {
     }
 
     private String getInstructions(){
-        String instructions = "";
-        instructions += "You are a debugging assistant. You will be give a Java stack trace " +
-                "for an error and answer questions related to the root cause of the error.\n" +
-                "Call the `debug` function to run JDB debugger commands on the stopped program." +
-                "You may call the `debug` function to run the following commands: ";
-        // Add some commands dynamically
+        // TODO: Recommend LLM to:
+        //  1. set a breakpoint and reach it
+        //  2. use where command to know the class name of current function
+        //  3. use info to learn more details
+        //  instead of directly using info command if it wants to learn more about a function
+        //  The recommendation can be put either here or the definition of info command
+        String instructionsFormat = getFormat("Prompt/InstructionsFormat.txt");
+        String commandsString = "";
         int commandsLength = Constants.getInstance().commands.size();
         for(int i=0; i<commandsLength-1; i++){
-            instructions += "`" + Constants.getInstance().commands.get(i) + "`" + ", ";
+            String command = Constants.getInstance().commands.get(i);
+            commandsString += "`" + command + "`" + ", ";
         }
-        instructions += Constants.getInstance().commands.get(commandsLength-1) + ". ";
-        instructions += "Call `debug` to print any variable value or expression that you believe" +
-                "may contribute to the error.\nCall the `info` function to get the documentation " +
-                "and source code for any variable, function, package, class, method reference, field reference, " +
-                "or dotted reference visible in the current frame. Examples include: n, e.n where e is an " +
-                "expression, and t.n where t is a type. Unless it is from a common, widely-used library, " +
-                "you MUST call `info` exactly once on any symbol that is reference in code leading up to the error.\n" +
-                "Call the provided functions as many times as you would like.\n" +
-                "The root cause of any error is likely due to a problem in the source code from the user. " +
-                "Explain why each variable contributing to the error has been set to the value that is has. " +
-                "Continue with your explanation until you reach the root cause of the error. Your answer " +
-                "may be as long as necessary.\n" +
-                "End your answer with a section titled \"Recommendation\" that contains one of\n" +
-                "- a fix if you have identified the root cause\n" +
-                "- a numbered list of 1-3 suggestions for how to continue debugging if you have not";
-        return instructions;
+        commandsString += "`" + Constants.getInstance().commands.get(commandsLength-1) + "`";
+        return MessageFormat.format(instructionsFormat, commandsString);
     }
 
     private String getStackTrace() {
-        String prompt = "";
-        prompt += "The program has this stack trace:\n";
+        String stackTraceFormat = getFormat("Prompt/StackTraceFormat.txt");
         try{
-            String originCodeBlock = Agent.getInstance().getResponse("where");
-            prompt += wrapCodeBlock(originCodeBlock);
-            return prompt;
+            String stackTrace = Agent.getInstance().getResponse("where");
+            stackTrace = wrapCodeBlock(stackTrace);
+            return MessageFormat.format(stackTraceFormat, stackTrace);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -80,17 +65,17 @@ public class Prompt {
     }
 
     private String getErrorMessage() throws Exception {
+        String errorFormat = getFormat("Prompt/ErrorFormat.txt");
+        String errorDetails = getFormat("Prompt/ErrorDetails.txt");
         File file = new File(Constants.getInstance().basedir, "failing_tests");
         try(BufferedReader br = new BufferedReader(new FileReader(file))){
             String line = br.readLine();
-            String rest = "";
+            String errorMessage = "";
             while((line = br.readLine()) != null){
-                rest += line;
+                errorMessage += line;
             }
-            String prompt = "";
-            prompt += "The program encountered the following error:\n";
-            prompt += wrapCodeBlock(rest);
-            return prompt;
+            errorMessage = wrapCodeBlock(errorMessage);
+            return MessageFormat.format(errorFormat, errorMessage, errorDetails);
         }
         catch(IOException e){
             e.printStackTrace();
@@ -98,26 +83,46 @@ public class Prompt {
         }
     }
 
-    private String getErrorDetails(){
-        return "The assertion code is correct and must not be changed.";
-    }
-
     // The command line information is included in ChatDBG's code but not in paper, so I decide not to add it to prompt
 
     // The program input is included in ChatDBG's code but not in paper, so I decide not to add it to prompt
 
     private String getDebugHistory(){
-        String prompt = "";
-        prompt += "This is the history of some pdb commands I ran and the results:\n";
-        String originCodeBlock = Agent.getInstance().getHistory();
-        prompt += wrapCodeBlock(originCodeBlock);
-        return prompt;
+        String historyFormat = getFormat("Prompt/HistoryFormat.txt");
+        String history = Agent.getInstance().getHistory();
+        history += wrapCodeBlock(history);
+        return MessageFormat.format(historyFormat, history);
     }
 
     private String getUserText(){
         return userText;
     }
 
+    private String getFormat(String path){
+        InputStream inputStream = Prompt.class.getClassLoader().getResourceAsStream(path);
+        if(inputStream == null){
+            return "File not found";
+        }
+        try(BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(inputStream))){
+            String line;
+            StringBuilder sb = new StringBuilder();
+            while((line = reader.readLine()) != null){
+                sb.append(line);
+                sb.append("\n");
+            }
+            return sb.toString();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            return "Error in TmpTest.getInstruction: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Truncate the code block if it is too long and wrap it with triple backticks
+     * @param code the code block to be wrapped
+     * @return the wrapped code block
+     */
     private String wrapCodeBlock(String code){
         code = truncateProportionally(code);
         String result = "";

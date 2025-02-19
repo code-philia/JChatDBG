@@ -1,0 +1,1 @@
+The assertion code is correct and must not be changed.

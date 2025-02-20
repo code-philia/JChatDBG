@@ -24,10 +24,6 @@ public class ChatBot {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.redirectErrorStream(true);
         try {
-            // TODO: Three problems still happen sometimes and need more testing:
-            //  1. Connection reset
-            //  2. Spend too much time on connecting to server
-            //  3. Spend too much time on waiting for response
             pb.start();
             return askServer(prompt);
         } catch (Exception e) {

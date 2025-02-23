@@ -17,8 +17,7 @@ public class Prompt {
     }
 
     public String getPrompt(String question) {
-        userText = question;
-        String promptFormat = getFormat("Prompt/PromptFormat.txt");
+        String promptFormat = getFormat("NewPrompt/PromptFormat.txt");
         try{
             String instructions = getInstructions();
             String stackTrace = getStackTrace();
@@ -34,13 +33,7 @@ public class Prompt {
     }
 
     private String getInstructions(){
-        // TODO: Recommend LLM to:
-        //  1. set a breakpoint and reach it
-        //  2. use where command to know the class name of current function
-        //  3. use info to learn more details
-        //  instead of directly using info command if it wants to learn more about a function
-        //  The recommendation can be put either here or the definition of info command
-        String instructionsFormat = getFormat("Prompt/InstructionsFormat.txt");
+        String instructionsFormat = getFormat("NewPrompt/InstructionsFormat.txt");
         String commandsString = "";
         int commandsLength = Constants.getInstance().commands.size();
         for(int i=0; i<commandsLength-1; i++){
@@ -52,7 +45,7 @@ public class Prompt {
     }
 
     private String getStackTrace() {
-        String stackTraceFormat = getFormat("Prompt/StackTraceFormat.txt");
+        String stackTraceFormat = getFormat("NewPrompt/StackTraceFormat.txt");
         try{
             String stackTrace = Agent.getInstance().getResponse("where");
             stackTrace = wrapCodeBlock(stackTrace);
@@ -65,8 +58,8 @@ public class Prompt {
     }
 
     private String getErrorMessage() throws Exception {
-        String errorFormat = getFormat("Prompt/ErrorFormat.txt");
-        String errorDetails = getFormat("Prompt/ErrorDetails.txt");
+        String errorFormat = getFormat("NewPrompt/ErrorFormat.txt");
+        String errorDetails = getFormat("NewPrompt/ErrorDetails.txt");
         File file = new File(Constants.getInstance().basedir, "failing_tests");
         try(BufferedReader br = new BufferedReader(new FileReader(file))){
             String line = br.readLine();
@@ -88,18 +81,18 @@ public class Prompt {
     // The program input is included in ChatDBG's code but not in paper, so I decide not to add it to prompt
 
     private String getDebugHistory(){
-        String historyFormat = getFormat("Prompt/HistoryFormat.txt");
+        String historyFormat = getFormat("NewPrompt/HistoryFormat.txt");
         String history = Agent.getInstance().getHistory();
         history += wrapCodeBlock(history);
         return MessageFormat.format(historyFormat, history);
     }
 
-    private String getUserText(){
-        return userText;
+    public String getUserText(){
+        return getFormat("NewPrompt/UserText.txt");
     }
 
     private String getFormat(String path){
-        InputStream inputStream = Prompt.class.getClassLoader().getResourceAsStream(path);
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(path);
         if(inputStream == null){
             return "File not found";
         }

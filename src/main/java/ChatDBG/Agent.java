@@ -1,6 +1,7 @@
 package ChatDBG;
 
 import java.io.*;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -32,8 +33,21 @@ public class Agent {
         catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error in ChatDBG.Agent.run: " + e.getMessage());
+            return;
         }
-        runloop();
+        // runloop();
+        jdbConnection = connectToJDB();
+        try{
+            printResponse(MessageFormat.format("stop in {0}.{1}", constants.testEntryClass, constants.testEntryMethod));
+            printResponse("run");
+            printResponse(Prompt.getInstance().getUserText());
+            jdbConnection.destroy();
+            jdbServer.destroy();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            System.out.println("Error in ChatDBG.Agent.run: " + e.getMessage());
+        }
     }
 
     private void runloop() {
@@ -70,7 +84,6 @@ public class Agent {
         int port = constants.port;
         String[] command = {"cmd.exe", "/c", "jdb", "-connect", "com.sun.jdi.SocketAttach:hostname=localhost,port="+port};
         ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
         try {
             Process p = pb.start();
             readResponse(p.getInputStream()); // Don't need to print the response here, just read and discard it
@@ -140,9 +153,18 @@ public class Agent {
         return response;
     }
 
-    private void printResponse(String response) throws Exception {
+    private void printResponse(String question) throws Exception {
         String border = "----------------------------------------";
-        System.out.println(response);
+        System.out.println(border);
+        System.out.println(MessageFormat.format("(User) {0}", question));
+        String response = "";
+        if(isJDBCommand(question)){
+            response = getResponse(question);
+        }
+        else{
+            response = chatbot.getResponse(question);
+        }
+        System.out.println("(ChatDBG) " + response);
         System.out.println(border);
     }
 

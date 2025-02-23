@@ -31,10 +31,6 @@ public class Functions {
      * @return The documentation and source code for the function.
      * */
     public String info(String className, String methodName){
-        // TODO: QDox and none of the existing tools can help getting the line numbers of the code,
-        //   so that we have to modify the prompt instead, ask ChatGPT to use both list and info
-        //   commands to locate the line of code
-        // TODO: ChatDBG try to use info to learn about a variable name some times, modify the prompt to remind LLM of using print command
         if(isSystemClass(className)){
             return String.format("%s is a system class", className);
         }
@@ -94,8 +90,9 @@ public class Functions {
     }
 
     private boolean isAllowedCommand(String command){
-        String[] allowedCommands = {"where", "up", "down", "print", "list"};
-        for(String allowedCommand: allowedCommands){
+        int commandsLength = Constants.getInstance().commands.size();
+        for(int i=0; i<commandsLength; i++){
+            String allowedCommand = Constants.getInstance().commands.get(i);
             if(command.startsWith(allowedCommand)){
                 return true;
             }

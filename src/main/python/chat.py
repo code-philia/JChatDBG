@@ -95,7 +95,10 @@ class ChatServer:
                     "command": function_arguments
                 }
             self.write_log(f"Json function arguments: {function_arguments}")
-            function_return_value = getattr(self, function_name)(**function_arguments)
+            if function_name == 'info' or function_name == 'debug':
+                function_return_value = getattr(self, function_name)(**function_arguments)
+            else:
+                function_return_value = 'Invalid function name'
             self.write_log(f"Function return value: {function_return_value}")
             response = {
                 "tool_call_id": tool_call.id,
@@ -122,15 +125,18 @@ class ChatServer:
                 break
             self.write_log('Get completion')
             response_message = completion.choices[0].message
+            if completion.choices[0].finish_reason == "tool_calls":
+                self.write_log("Get tool calls")
+                self.add_function_results_to_conversation(completion)
+                continue
             if response_message.content:
                 self.write_log(f"GPT response: {response_message.content}")
                 self.responses += response_message.content
                 self.responses += "\n"
-            if completion.choices[0].finish_reason == "tool_calls":
-                self.write_log("Get tool calls")
-                self.add_function_results_to_conversation(completion)
-            else:
                 break
+            else:
+                self.write_log('No tool calls and no response')
+                continue
 
     def run(self):
         self.connection, _ = self.server_socket.accept()

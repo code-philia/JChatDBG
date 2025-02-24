@@ -110,7 +110,7 @@ public class ChatBot {
     }
 
     private String readMessage(){
-        // System.out.println("Waiting for response...");
+        System.out.println("Waiting for response...");
         try{
             InputStream in = clientSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));

@@ -34,7 +34,8 @@ class ChatServer:
             
     def write_log(self, message):
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        message = f"(LOG) {current_time:\n{message}}"
+        message = f"(LOG) {current_time}:\n{message}"
+        print(message)
         with open(self.log_path, "a", encoding="GBK") as f:
             f.write(message + "\n")
         
@@ -132,6 +133,7 @@ class ChatServer:
                 self.write_log(f"GPT response: {response_message.content}")
                 self.responses += response_message.content
                 self.responses += "\n"
+                break
             else:
                 self.write_log('No tool calls and no response')
                 continue

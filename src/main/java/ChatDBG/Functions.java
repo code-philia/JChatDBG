@@ -90,8 +90,9 @@ public class Functions {
     }
 
     private boolean isAllowedCommand(String command){
-        String[] allowedCommands = {"where", "up", "down", "print", "list"};
-        for(String allowedCommand: allowedCommands){
+        int commandsLength = Constants.getInstance().commands.size();
+        for(int i=0; i<commandsLength; i++){
+            String allowedCommand = Constants.getInstance().commands.get(i);
             if(command.startsWith(allowedCommand)){
                 return true;
             }

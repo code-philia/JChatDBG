@@ -62,7 +62,7 @@ public class ChatBot {
         while(true){
             String response = readMessage();
             String[] parts = response.split(" ");
-            if(parts[0].equals("info")){
+            if(parts[0].equals("info") && parts.length==3){
                 handleInfo(parts[1], parts[2]);
             }
             else if(parts[0].equals("debug")){

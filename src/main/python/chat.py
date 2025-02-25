@@ -10,7 +10,10 @@ class ChatServer:
         self.log_path = self.get_log_path()
         self.initialize_log()
         
-        self.client = OpenAI()
+        self.client = OpenAI(
+            api_key=os.environ.get("OPENAI_API_KEY"),
+            base_url=os.environ.get("OPENAI_BASE_URL")
+        )
         self.tools = self.get_tools()
         self.conversation = [{'role': 'system', 'content': 'You are a helpful assistant.'}]
         self.responses = ""

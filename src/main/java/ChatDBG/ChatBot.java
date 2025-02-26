@@ -20,11 +20,9 @@ public class ChatBot {
 
     public String getResponse(String question) {
         String prompt = Prompt.getInstance().getPrompt(question);
-        String[] command = {"cmd.exe", "/c", "python", "src/main/python/chat.py"};
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
+        String[] args = {"python", "-u", "src/main/python/chat.py"};
         try {
-            pb.start();
+            Runtime.getRuntime().exec(args);
             return askServer(prompt);
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,13 +94,16 @@ public class ChatBot {
     }
 
     private void sendMessage(String question){
-        // System.out.println("Sending message to server...");
-        question += "\nEND\n";
         try{
+            int length = question.getBytes("GBK").length;
+            String lengthHeader = length + "\n";
+            byte[] lengthHeaderBytes = lengthHeader.getBytes("GBK");
+            byte[] questionBytes = question.getBytes("GBK");
+
             OutputStream out = clientSocket.getOutputStream();
-            OutputStreamWriter writer = new OutputStreamWriter(out, "GBK");
-            PrintWriter printWriter = new PrintWriter(writer, true);
-            printWriter.println(question);
+            out.write(lengthHeaderBytes);
+            out.write(questionBytes);
+            out.flush();
         }
         catch (Exception e) {
             System.out.println("Error in ChatDBG.ChatBot.sendMessage: " + e);

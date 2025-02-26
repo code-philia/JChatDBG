@@ -4,6 +4,11 @@ import json
 from openai import OpenAI
 import openai
 import os
+import sys
+
+curPath = os.path.abspath(os.path.dirname(__file__))
+rootPath = os.path.split(curPath)[0]
+sys.path.append(rootPath)
 
 class ChatServer:
     def __init__(self):
@@ -18,9 +23,8 @@ class ChatServer:
         self.conversation = [{'role': 'system', 'content': 'You are a helpful assistant.'}]
         self.responses = ""
         
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_address = ('localhost', 6789)
-        self.server_socket.bind(self.server_address)
+        self.server_socket = socket.socket()
+        self.server_socket.bind(('', 6789))
         self.server_socket.listen(1)
         self.connection = None
         
@@ -38,7 +42,6 @@ class ChatServer:
     def write_log(self, message):
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         message = f"(LOG) {current_time}:\n{message}"
-        print(message)
         with open(self.log_path, "a", encoding="GBK") as f:
             f.write(message + "\n")
         
@@ -52,15 +55,20 @@ class ChatServer:
         return data.decode('GBK')
         
     def read_message(self):
-        data = ""
-        while True:
-            line = self.read_line()
-            if line == "END\n":
-                break
-            data += line
-        if data.endswith("\n"):
-            data = data[:-1]
-        return data
+        length_line = self.read_line().strip()
+        try:
+            data_length = int(length_line)
+        except ValueError:
+            self.write_log(f"Invalid message length: {length_line}")
+            raise ValueError(f"Invalid message length: {length_line}")
+        
+        data = b""
+        while len(data) < data_length:
+            part = self.connection.recv(min(data_length - len(data), 1024))
+            if not part:
+                raise ValueError("Connection closed while reading message")
+            data += part
+        return data.decode("GBK")
         
     def send_message(self, message):
         encoded_break = '\n'.encode('GBK')
@@ -115,7 +123,7 @@ class ChatServer:
         while True:
             try:
                 completion = self.client.chat.completions.create(
-                    model="gpt-4o-2024-05-13",
+                    model="gpt-4o",
                     messages=self.conversation,
                     tools=self.tools
                 )
@@ -127,7 +135,11 @@ class ChatServer:
                 self.write_log(f"Error: {e}")
                 break
             self.write_log('Get completion')
-            response_message = completion.choices[0].message
+            try:
+                response_message = completion.choices[0].message
+            except Exception as e:
+                self.write_log(f"Error: {e}")
+                break
             if completion.choices[0].finish_reason == "tool_calls":
                 self.write_log("Get tool calls")
                 self.add_function_results_to_conversation(completion)
@@ -144,7 +156,6 @@ class ChatServer:
     def run(self):
         self.connection, _ = self.server_socket.accept()
         try:
-            # question = self.connection.recv(1024)
             question = self.read_message()
             self.write_log(f"Get question: {question}")
             self.conversation.append({'role': 'user', 'content': question})

@@ -95,7 +95,7 @@ public class ChatBot {
 
     private void sendMessage(String question){
         try{
-            int length = question.length();
+            int length = question.getBytes("GBK").length;
             String lengthHeader = length + "\n";
             byte[] lengthHeaderBytes = lengthHeader.getBytes("GBK");
             byte[] questionBytes = question.getBytes("GBK");

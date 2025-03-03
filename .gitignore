@@ -42,3 +42,5 @@ build/
 .DS_Store
 src/main/python/log.txt
 .idea/dataSources.xml
+.idea/vcs.xml
+.idea/misc.xml

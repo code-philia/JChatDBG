@@ -22,6 +22,8 @@ The project has not been completed yet, but it is under development.
 
 3. Install [Maven](https://maven.apache.org/download.cgi) and add it to your system path.
 
+4. Install [Defects4J](https://github.com/rjust/defects4j) and put it at the project root path.
+
 ### Properties
 
 You **must** modify the settings in `config.properties` to run cases in Defects4J dataset. The following properties must be identified:

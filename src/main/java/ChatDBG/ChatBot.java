@@ -2,6 +2,9 @@ package ChatDBG;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Used to handle the communication between the ChatDBG and LLM.
@@ -20,7 +23,7 @@ public class ChatBot {
 
     public String getResponse(String question) {
         String prompt = Prompt.getInstance().getPrompt(question);
-        String[] args = {"python", "-u", "src/main/python/chat.py"};
+        String[] args = {"python", "-u", "src/main/python/chat.py", "--name", Constants.getInstance().name, "--id", Constants.getInstance().id+""};
         try {
             Runtime.getRuntime().exec(args);
             return askServer(prompt);

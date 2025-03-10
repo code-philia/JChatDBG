@@ -6,6 +6,8 @@ ${OUTFILE}
 all_tests
 failing-tests.txt
 src/main/python/tempCodeRunnerFile.py
+/results/*
+/defects4j/*
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

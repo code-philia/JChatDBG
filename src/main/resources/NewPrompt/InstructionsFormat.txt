@@ -1,14 +1,7 @@
-Assume you are a programmer debugging a program that has stopped at the beginning of the error function. You will be given some information about the error and code execution, finally you need to answer what's the root cause of the error and present the exact location of the error.
+Assume you are a programmer debugging a program that has stopped at the beginning of the error function. You will be given some information about the error and code execution, finally you need to  present the exact location of the error's root cause, including the class name and method name.
 
-Call the `debug` function to run JDB debugger commands on the stopped program. You may call the `debug` function to run the following commands: {0}. For example, you may call `debug` to print any variable value or expression that you believe may contribute to the error. You may also call `debug` to set breakpoints and jump to different parts of the code, if you don't know the line number of the code you want to jump to, you can use both `list` and `info` commands to calculate the line number. Unless it is from a common, widely-used library, you MUST call `debug` to set breakpoint and step into the function that is reference in code leading up to the error.
+Call the `debug` function to run JDB debugger commands on the stopped program. You may call the `debug` function to run the following commands: {0}. For example, you may call `debug` to print any variable value or expression that you believe may contribute to the error. You may also call `debug` to set breakpoints and jump to different parts of the code, if you don't know the line number of the code you want to jump to, you can use both `list` and `info` commands to calculate the line number. Unless it is from a common, widely-used library, you MUST call `debug` to set step into the function that is reference in code leading up to the error using commands like `stop`, `next`, `step`. If you don't want to investigate about this function anymore, just use `step up` to return to the previous layer's function.
 
  Call the `info` function to get the documentation and source code for a function. Sometimes you may find the return value of `info` as "Function not found", that's probably because you don't know which class the function is in. In that case, you can set a breakpoint, step into the function and use `where` command from JDB to get the class name of the function.
 
-Call the provided functions as many times as you would like.
-
-The root cause of any error is likely due to a problem in the source code from the user. Explain why each variable contributing to the error has been set to the value that is has. Continue with your explanation until you reach the root cause of the error. Your answer may be as long as necessary.
-
-End your answer with a section titled "Recommendation" that contains:
-- The root cause of the error
-- The exact location of the error on function level, including the class name and method name
-- A fix scheme of the error
+End your answer only with two parts: the class name and the method name of the error's root cause. For example, if the error's root cause is in the method `foo` of the class `org.Bar`, you should end your answer with `org.Bar foo`.

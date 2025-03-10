@@ -1,10 +1,12 @@
-import socket
-import time
 import json
-from openai import OpenAI
-import openai
 import os
+import socket
 import sys
+import time
+
+import argparse
+import openai
+from openai import OpenAI
 
 curPath = os.path.abspath(os.path.dirname(__file__))
 rootPath = os.path.split(curPath)[0]
@@ -12,6 +14,7 @@ sys.path.append(rootPath)
 
 class ChatServer:
     def __init__(self):
+        self.args = None
         self.log_path = self.get_log_path()
         self.initialize_log()
         
@@ -27,6 +30,14 @@ class ChatServer:
         self.server_socket.bind(('', 6789))
         self.server_socket.listen(1)
         self.connection = None
+
+        self.command_list = []
+        
+    def get_args(self):
+        parser = argparse.ArgumentParser(description="Chat server")
+        parser.add_argument("--name", help="Name of the debugging topic")
+        parser.add_argument("--id", help="ID of the bug being debugged")
+        return parser.parse_args()
         
     def get_log_path(self):
         current_path = os.path.abspath(__file__)
@@ -105,6 +116,11 @@ class ChatServer:
                 function_arguments = {
                     "command": function_arguments
                 }
+            command = {
+                "function_name": function_name,
+                "function_arguments": function_arguments
+            }
+            self.command_list.append(command)
             self.write_log(f"Json function arguments: {function_arguments}")
             if function_name == 'info' or function_name == 'debug':
                 function_return_value = getattr(self, function_name)(**function_arguments)
@@ -131,14 +147,18 @@ class ChatServer:
                 self.write_log("Rate limited, waiting for 1 second")
                 time.sleep(1)  
                 continue
+            except openai.APIError as e:
+                self.write_log(f"API error, waiting for 5 seconds\n{e}")
+                time.sleep(5)
+                continue
             except Exception as e:
-                self.write_log(f"Error: {e}")
+                self.write_log(f"Error when making completion: {e}")
                 break
             self.write_log('Get completion')
             try:
                 response_message = completion.choices[0].message
             except Exception as e:
-                self.write_log(f"Error: {e}")
+                self.write_log(f"Error when reading completion: {e}")
                 break
             if completion.choices[0].finish_reason == "tool_calls":
                 self.write_log("Get tool calls")
@@ -146,12 +166,35 @@ class ChatServer:
                 continue
             if response_message.content:
                 self.write_log(f"GPT response: {response_message.content}")
+                self.store_results(response_message.content)
                 self.responses += response_message.content
                 self.responses += "\n"
                 break
             else:
                 self.write_log('No tool calls and no response')
                 continue
+
+    def store_results(self, response):
+        """
+        1. Retrieve class name and method name from response
+        2. Store them and tool calls in a json file
+        """
+        class_name = response.split()[0]
+        method_name = response.split()[1]
+        taskName = self.args.name
+        bugId = self.args.id
+        folder_name_1 = "results"
+        folder_name_2 = taskName
+        folder_name = os.path.join(folder_name_1, folder_name_2)
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+        file_name = os.path.join(folder_name, f"{bugId}.json")
+        with open(file_name, "w") as f:
+            json.dump({
+                "class_name": class_name,
+                "method_name": method_name,
+                "tool_calls": self.command_list
+            }, f)
 
     def run(self):
         self.connection, _ = self.server_socket.accept()
@@ -219,4 +262,5 @@ class ChatServer:
 
 if __name__ == "__main__":
     chat_server = ChatServer()
+    chat_server.args = chat_server.get_args()
     chat_server.run()

@@ -79,7 +79,7 @@
     <target depends="compile.tests,update.all.tests" description="Run unit tests with JDB" name="run.with.jdb">
         <junit fork="yes" haltonerror="no" haltonfailure="no" printsummary="yes" showOutput="true">
             <jvmarg value="-Xdebug"/>
-            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=6006"/>
             <classpath>
                 <!-- Make sure that instrumented classes appear at the beginning of the
                      classpath -->

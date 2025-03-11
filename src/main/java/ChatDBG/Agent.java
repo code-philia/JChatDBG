@@ -82,10 +82,9 @@ public class Agent {
 
     private Process connectToJDB(){
         int port = constants.port;
-        String[] command = {"cmd.exe", "/c", "jdb", "-connect", "com.sun.jdi.SocketAttach:hostname=localhost,port="+port};
-        ProcessBuilder pb = new ProcessBuilder(command);
+        String command = "jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port="+port;
         try {
-            Process p = pb.start();
+            Process p = Runtime.getRuntime().exec(command);
             readResponse(p.getInputStream()); // Don't need to print the response here, just read and discard it
             return p;
         } catch (Exception e) {

@@ -25,11 +25,14 @@ public class Constants {
     public static Constants getInstance() {
         if (instance == null) {
             instance = new Constants();
+            instance.refresh();
         }
         return instance;
     }
 
-    private Constants() {
+    private Constants() {}
+
+    public void refresh(){
         readProperties();
         updateXML();
     }

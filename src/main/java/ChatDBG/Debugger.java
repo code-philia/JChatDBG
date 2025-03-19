@@ -20,8 +20,13 @@ public class Debugger {
     public Process run() {
         try{
             String xmlPath = getXMLPath();
-            String command = "ant -f " + xmlPath + " run.with.jdb";
-            return Runtime.getRuntime().exec(command);
+            // For Windows
+            String[] command = {"cmd.exe", "/c", "ant", "-f", xmlPath, "run.with.jdb"};
+            ProcessBuilder pb = new ProcessBuilder(command);
+            return pb.start();
+            // For Linux
+            // String command = "ant -f " + xmlPath + " run.with.jdb";
+            // return Runtime.getRuntime().exec(command);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error in ChatDBG.Debugger.run: " + e.getMessage());

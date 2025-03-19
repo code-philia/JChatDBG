@@ -23,7 +23,10 @@ public class ChatBot {
 
     public String getResponse(String question) {
         String prompt = Prompt.getInstance().getPrompt(question);
-        String[] args = {"python3", "-u", "src/main/python/chat.py", "--name", Constants.getInstance().name, "--id", Constants.getInstance().id+""};
+        // For Windows:
+        String[] args = {"python", "-u", "src/main/python/chat.py", "--name", Constants.getInstance().name, "--id", Constants.getInstance().id+""};
+        // For Linux:
+        // String[] args = {"python3", "-u", "src/main/python/chat.py", "--name", Constants.getInstance().name, "--id", Constants.getInstance().id+""};
         try {
             Runtime.getRuntime().exec(args);
             return askServer(prompt);
